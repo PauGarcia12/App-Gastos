@@ -51,7 +51,9 @@ jobs:
             --exclude "index.html"
 
       - name: Upload index.html without cache
-        run: aws s3 cp dist/index.html s3://${{ secrets.S3_BUCKET_NAME }}/index.html --cache-control "no-cache, no-store, must-revalidate" --content-type "text/html; charset=utf-8"
+        run: |
+          BUCKET=$(echo -n "${{ secrets.S3_BUCKET_NAME }}" | tr -d '[:space:]')
+          aws s3 cp dist/index.html "s3://${BUCKET}/index.html" --cache-control "no-cache, no-store, must-revalidate" --content-type "text/html; charset=utf-8"
 
       - name: Invalidate CloudFront cache
         run: aws cloudfront create-invalidation --distribution-id ${{ secrets.CLOUDFRONT_DISTRIBUTION_ID }} --paths "/*"
