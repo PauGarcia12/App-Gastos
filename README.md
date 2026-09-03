@@ -2,11 +2,6 @@
 
 > Aplicación web para el seguimiento y gestión de gastos personales con infraestructura serverless en AWS.
 
-![Vue 3](https://img.shields.io/badge/Vue-3.x-4FC08D?logo=vue.js&logoColor=white)
-![Vite](https://img.shields.io/badge/Vite-8.x-646CFF?logo=vite&logoColor=white)
-![AWS](https://img.shields.io/badge/AWS-Serverless-FF9900?logo=amazonaws&logoColor=white)
-![CI/CD](https://img.shields.io/badge/CI%2FCD-GitHub%20Actions-2088FF?logo=githubactions&logoColor=white)
-
 ---
 
 ## Descripción
@@ -133,7 +128,7 @@ El pipeline de GitHub Actions se activa en cada push a `main` y ejecuta los sigu
 6. Upload de `index.html` sin caché (`no-store`) para garantizar actualizaciones inmediatas
 7. Invalidación de caché en CloudFront
 
-La autenticación con AWS se realiza mediante **OIDC** (sin claves estáticas almacenadas).
+La autenticación con AWS se realiza mediante **OIDC** sin tener claves estáticas almacenadas.
 
 ### Secrets necesarios en GitHub
 
@@ -158,3 +153,17 @@ npm run build
 ```
 
 Genera los archivos optimizados en `dist/`.
+
+---
+
+## Por qué este proyecto
+
+Elegí construir una app de gastos personales porque quería un proyecto que usara de verdad, con datos reales desde el primer día. No tiene sentido construir algo que no vas a utilizar.
+
+La decisión de hacerlo 100% serverless fue consciente: quería aprender cómo funcionan las arquitecturas que usan las empresas en producción, no montar un servidor en EC2 y olvidarme. Con Lambda, API Gateway y DynamoDB aprendes a pensar de otra forma, cada función tiene una sola responsabilidad, los eventos disparan procesos automáticamente, y no pagas por recursos que no usas.
+
+Lo que más me costó fue entender el flujo de autenticación con Cognito y el intercambio de tokens JWT. No es tan inmediato como un login tradicional, pero cuando lo entiendes ves por qué es la forma correcta de hacerlo en una arquitectura cloud.
+
+La parte que más me gustó fue el pipeline de subida del CSV: el usuario sube el archivo, S3 dispara automáticamente la Lambda, la Lambda categoriza cada transacción y lo guarda en DynamoDB, todo sin que yo tenga que hacer nada. Eso es arquitectura event-driven real.
+
+Si lo volviera a hacer, añadiría Terraform para definir toda la infraestructura como código desde el principio, y un sistema de alertas con SNS cuando el gasto mensual supera un presupuesto definido. Son los siguientes pasos naturales del proyecto.

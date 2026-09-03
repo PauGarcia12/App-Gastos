@@ -157,7 +157,6 @@ async function subir() {
             <li>Separador <code>;</code> (punto y coma)</li>
             <li>Importe con coma decimal y sufijo <code>EUR</code></li>
             <li>Ejemplo: <code>-45,30EUR</code></li>
-            <li>Compatible con extractos <strong>Imagin</strong></li>
           </ul>
         </div>
         <div class="info-card info-card--flow">

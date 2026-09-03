@@ -15,9 +15,10 @@ const userPool = new CognitoUserPool({
 const email = ref('')
 const password = ref('')
 const newPassword = ref('')
+const confirmCode = ref('')
 const error = ref(null)
 const loading = ref(false)
-const step = ref('login')
+const step = ref('login') // login | register | confirm | new-password
 
 let pendingCognitoUser = null
 
@@ -50,7 +51,7 @@ function login() {
           error.value = 'No existe una cuenta con ese email.'
           break
         case 'UserNotConfirmedException':
-          error.value = 'Debes confirmar tu cuenta antes de entrar.'
+          error.value = 'Debes confirmar tu cuenta. Revisa tu email.'
           break
         default:
           error.value = err.message || 'Error al iniciar sesión.'
@@ -61,6 +62,64 @@ function login() {
       pendingCognitoUser = cognitoUser
       step.value = 'new-password'
     },
+  })
+}
+
+function register() {
+  error.value = null
+  loading.value = true
+
+  userPool.signUp(email.value, password.value, [], null, (err, result) => {
+    loading.value = false
+    if (err) {
+      switch (err.code) {
+        case 'UsernameExistsException':
+          error.value = 'Ya existe una cuenta con ese email.'
+          break
+        case 'InvalidPasswordException':
+          error.value = 'La contraseña debe tener al menos 8 caracteres, una mayúscula y un número.'
+          break
+        default:
+          error.value = err.message || 'Error al crear la cuenta.'
+      }
+      return
+    }
+    pendingCognitoUser = result.user
+    step.value = 'confirm'
+  })
+}
+
+function confirmAccount() {
+  error.value = null
+  loading.value = true
+
+  pendingCognitoUser.confirmRegistration(confirmCode.value, true, (err) => {
+    loading.value = false
+    if (err) {
+      switch (err.code) {
+        case 'CodeMismatchException':
+          error.value = 'Código incorrecto. Comprueba tu email.'
+          break
+        case 'ExpiredCodeException':
+          error.value = 'El código ha expirado. Solicita uno nuevo.'
+          break
+        default:
+          error.value = err.message || 'Error al confirmar la cuenta.'
+      }
+      return
+    }
+    step.value = 'login'
+    error.value = null
+  })
+}
+
+function resendCode() {
+  pendingCognitoUser.resendConfirmationCode((err) => {
+    if (err) {
+      error.value = 'Error al reenviar el código.'
+      return
+    }
+    error.value = null
   })
 }
 
@@ -91,60 +150,109 @@ function submitNewPassword() {
         </div>
         <h1 class="hero-title">Tus finanzas,<br/>bajo control.</h1>
         <p class="hero-sub">Importa tus extractos bancarios y visualiza tus gastos categorizados al instante.</p>
-        <div class="hero-stats">
-          <div class="stat">
-            <span class="stat-num">35+</span>
-            <span class="stat-label">Categorías</span>
-          </div>
-          <div class="stat-divider" />
-          <div class="stat">
-            <span class="stat-num">100%</span>
-            <span class="stat-label">Privado</span>
-          </div>
-          <div class="stat-divider" />
-          <div class="stat">
-            <span class="stat-num">AWS</span>
-            <span class="stat-label">Infraestructura</span>
-          </div>
-        </div>
       </div>
     </div>
 
     <div class="login-right">
       <div class="login-box">
-        <div class="login-header">
-          <h2>{{ step === 'login' ? 'Acceder' : 'Nueva contraseña' }}</h2>
-          <p>{{ step === 'login' ? 'Introduce tus credenciales para continuar' : 'Establece tu contraseña definitiva' }}</p>
-        </div>
 
-        <form v-if="step === 'login'" @submit.prevent="login">
-          <div class="field">
-            <label for="email">Email</label>
-            <input id="email" v-model="email" type="email" placeholder="tu@email.com" autocomplete="email" required />
+        <!-- LOGIN -->
+        <template v-if="step === 'login'">
+          <div class="login-header">
+            <h2>Acceder</h2>
+            <p>Introduce tus credenciales para continuar</p>
           </div>
-          <div class="field">
-            <label for="password">Contraseña</label>
-            <input id="password" v-model="password" type="password" placeholder="••••••••" autocomplete="current-password" required />
-          </div>
-          <p v-if="error" class="error-msg">{{ error }}</p>
-          <button class="btn-submit" type="submit" :disabled="loading">
-            <span v-if="loading" class="spinner" />
-            <span v-else>Entrar</span>
-          </button>
-        </form>
+          <form @submit.prevent="login">
+            <div class="field">
+              <label for="email">Email</label>
+              <input id="email" v-model="email" type="email" placeholder="tu@email.com" autocomplete="email" required />
+            </div>
+            <div class="field">
+              <label for="password">Contraseña</label>
+              <input id="password" v-model="password" type="password" placeholder="••••••••" autocomplete="current-password" required />
+            </div>
+            <p v-if="error" class="error-msg">{{ error }}</p>
+            <button class="btn-submit" type="submit" :disabled="loading">
+              <span v-if="loading" class="spinner" />
+              <span v-else>Entrar</span>
+            </button>
+          </form>
+          <p class="switch-text">
+            ¿No tienes cuenta?
+            <button class="link-btn" @click="step = 'register'; error = null">Crear cuenta</button>
+          </p>
+        </template>
 
-        <form v-else @submit.prevent="submitNewPassword">
-          <p class="info-msg">Debes establecer una contraseña nueva para continuar.</p>
-          <div class="field">
-            <label for="new-password">Nueva contraseña</label>
-            <input id="new-password" v-model="newPassword" type="password" placeholder="••••••••" autocomplete="new-password" required />
+        <!-- REGISTER -->
+        <template v-else-if="step === 'register'">
+          <div class="login-header">
+            <h2>Crear cuenta</h2>
+            <p>Introduce tu email y una contraseña</p>
           </div>
-          <p v-if="error" class="error-msg">{{ error }}</p>
-          <button class="btn-submit" type="submit" :disabled="loading">
-            <span v-if="loading" class="spinner" />
-            <span v-else>Establecer contraseña</span>
-          </button>
-        </form>
+          <form @submit.prevent="register">
+            <div class="field">
+              <label for="reg-email">Email</label>
+              <input id="reg-email" v-model="email" type="email" placeholder="tu@email.com" autocomplete="email" required />
+            </div>
+            <div class="field">
+              <label for="reg-password">Contraseña</label>
+              <input id="reg-password" v-model="password" type="password" placeholder="Mínimo 8 caracteres" autocomplete="new-password" required />
+            </div>
+            <p v-if="error" class="error-msg">{{ error }}</p>
+            <button class="btn-submit" type="submit" :disabled="loading">
+              <span v-if="loading" class="spinner" />
+              <span v-else>Crear cuenta</span>
+            </button>
+          </form>
+          <p class="switch-text">
+            ¿Ya tienes cuenta?
+            <button class="link-btn" @click="step = 'login'; error = null">Iniciar sesión</button>
+          </p>
+        </template>
+
+        <!-- CONFIRM EMAIL -->
+        <template v-else-if="step === 'confirm'">
+          <div class="login-header">
+            <h2>Confirma tu email</h2>
+            <p>Te hemos enviado un código a <strong>{{ email }}</strong></p>
+          </div>
+          <form @submit.prevent="confirmAccount">
+            <div class="field">
+              <label for="code">Código de verificación</label>
+              <input id="code" v-model="confirmCode" type="text" placeholder="123456" autocomplete="one-time-code" required />
+            </div>
+            <p v-if="error" class="error-msg">{{ error }}</p>
+            <button class="btn-submit" type="submit" :disabled="loading">
+              <span v-if="loading" class="spinner" />
+              <span v-else>Confirmar cuenta</span>
+            </button>
+          </form>
+          <p class="switch-text">
+            ¿No recibiste el código?
+            <button class="link-btn" @click="resendCode">Reenviar</button>
+          </p>
+        </template>
+
+        <!-- NEW PASSWORD -->
+        <template v-else-if="step === 'new-password'">
+          <div class="login-header">
+            <h2>Nueva contraseña</h2>
+            <p>Establece tu contraseña definitiva</p>
+          </div>
+          <form @submit.prevent="submitNewPassword">
+            <p class="info-msg">Debes establecer una contraseña nueva para continuar.</p>
+            <div class="field">
+              <label for="new-password">Nueva contraseña</label>
+              <input id="new-password" v-model="newPassword" type="password" placeholder="••••••••" autocomplete="new-password" required />
+            </div>
+            <p v-if="error" class="error-msg">{{ error }}</p>
+            <button class="btn-submit" type="submit" :disabled="loading">
+              <span v-if="loading" class="spinner" />
+              <span v-else>Establecer contraseña</span>
+            </button>
+          </form>
+        </template>
+
       </div>
     </div>
   </div>
@@ -218,37 +326,6 @@ function submitNewPassword() {
   line-height: 1.7;
   max-width: 340px;
   margin-bottom: 2.5rem;
-}
-
-.hero-stats {
-  display: flex;
-  align-items: center;
-  gap: 1.5rem;
-}
-
-.stat {
-  display: flex;
-  flex-direction: column;
-  gap: 0.1rem;
-}
-
-.stat-num {
-  font-size: 1.25rem;
-  font-weight: 700;
-  color: #ffffff;
-}
-
-.stat-label {
-  font-size: 0.75rem;
-  color: #71717a;
-  text-transform: uppercase;
-  letter-spacing: 0.05em;
-}
-
-.stat-divider {
-  width: 1px;
-  height: 32px;
-  background: #27272a;
 }
 
 .login-right {
@@ -352,6 +429,25 @@ input:focus {
 .btn-submit:hover:not(:disabled) { background: #27272a; }
 .btn-submit:active:not(:disabled) { transform: translateY(1px); }
 .btn-submit:disabled { opacity: 0.6; cursor: not-allowed; }
+
+.switch-text {
+  margin-top: 1.25rem;
+  text-align: center;
+  font-size: 0.875rem;
+  color: var(--text-2);
+}
+
+.link-btn {
+  background: none;
+  border: none;
+  color: var(--accent);
+  font-size: 0.875rem;
+  font-weight: 600;
+  cursor: pointer;
+  padding: 0;
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
 
 .spinner {
   width: 18px;
