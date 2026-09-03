@@ -18,7 +18,7 @@ const newPassword = ref('')
 const confirmCode = ref('')
 const error = ref(null)
 const loading = ref(false)
-const step = ref('login') // login | register | confirm | new-password
+const step = ref('login')
 
 let pendingCognitoUser = null
 
@@ -262,7 +262,7 @@ function submitNewPassword() {
 .login-page {
   min-height: 100vh;
   display: grid;
-  grid-template-columns: 1fr 1fr;
+  grid-template-columns: 4fr 6fr;
 }
 
 .login-left {
@@ -334,11 +334,17 @@ function submitNewPassword() {
   justify-content: center;
   padding: 3rem;
   background: var(--bg);
+  background-image: radial-gradient(var(--border) 1px, transparent 1px);
+  background-size: 24px 24px;
 }
 
 .login-box {
   width: 100%;
-  max-width: 380px;
+  max-width: 420px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 16px;
+  padding: 2.5rem;
 }
 
 .login-header {
