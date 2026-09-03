@@ -166,4 +166,4 @@ Lo que más me costó fue entender el flujo de autenticación con Cognito y el i
 
 La parte que más me gustó fue el pipeline de subida del CSV: el usuario sube el archivo, S3 dispara automáticamente la Lambda, la Lambda categoriza cada transacción y lo guarda en DynamoDB, todo sin que yo tenga que hacer nada. Eso es arquitectura event-driven real.
 
-Si lo volviera a hacer, añadiría Terraform para definir toda la infraestructura como código desde el principio, y un sistema de alertas con SNS cuando el gasto mensual supera un presupuesto definido. Son los siguientes pasos naturales del proyecto.
+Si lo volviera a hacer, añadiría Terraform para definir toda la infraestructura como código desde el principio, y un sistema de alertas con SNS cuando el gasto mensual supera un presupuesto definido.
